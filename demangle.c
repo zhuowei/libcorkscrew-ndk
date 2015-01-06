@@ -19,7 +19,7 @@
 
 #include <corkscrew/demangle.h>
 
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 extern char *__cxa_demangle (const char *mangled, char *buf, size_t *len,
                              int *status);

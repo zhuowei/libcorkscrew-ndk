@@ -60,7 +60,7 @@
 #include <errno.h>
 #include <sys/ptrace.h>
 #include <sys/exec_elf.h>
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 #if !defined(__BIONIC_HAVE_UCONTEXT_T)
 /* Old versions of the Android <signal.h> didn't define ucontext_t. */
@@ -121,7 +121,7 @@ static uintptr_t prel_to_absolute(uintptr_t place, uint32_t prel_offset) {
 static uintptr_t get_exception_handler(const memory_t* memory,
         const map_info_t* map_info_list, uintptr_t pc) {
     if (!pc) {
-        ALOGV("get_exception_handler: pc is zero, no handler");
+       //ALOGV("get_exception_handler: pc is zero, no handler");
         return 0;
     }
 
@@ -152,12 +152,12 @@ static uintptr_t get_exception_handler(const memory_t* memory,
             uint32_t index = (low + high) / 2;
             uintptr_t entry = exidx_start + index * 8;
             uint32_t entry_prel_pc;
-            ALOGV("XXX low=%u, high=%u, index=%u", low, high, index);
+           //ALOGV("XXX low=%u, high=%u, index=%u", low, high, index);
             if (!try_get_word(memory, entry, &entry_prel_pc)) {
                 break;
             }
             uintptr_t entry_pc = prel_to_absolute(entry, entry_prel_pc);
-            ALOGV("XXX entry_pc=0x%08x", entry_pc);
+           //ALOGV("XXX entry_pc=0x%08x", entry_pc);
             if (pc < entry_pc) {
                 high = index;
                 continue;
@@ -169,7 +169,7 @@ static uintptr_t get_exception_handler(const memory_t* memory,
                     break;
                 }
                 uintptr_t next_entry_pc = prel_to_absolute(next_entry, next_entry_prel_pc);
-                ALOGV("XXX next_entry_pc=0x%08x", next_entry_pc);
+               //ALOGV("XXX next_entry_pc=0x%08x", next_entry_pc);
                 if (pc >= next_entry_pc) {
                     low = index + 1;
                     continue;
@@ -191,13 +191,13 @@ static uintptr_t get_exception_handler(const memory_t* memory,
         }
     }
     if (mi) {
-        ALOGV("get_exception_handler: pc=0x%08x, module='%s', module_start=0x%08x, "
-                "exidx_start=0x%08x, exidx_size=%d, handler=0x%08x, handler_index=%d",
-                pc, mi->name, mi->start, exidx_start, exidx_size, handler, handler_index);
+       //ALOGV("get_exception_handler: pc=0x%08x, module='%s', module_start=0x%08x, "
+       //         "exidx_start=0x%08x, exidx_size=%d, handler=0x%08x, handler_index=%d",
+       //         pc, mi->name, mi->start, exidx_start, exidx_size, handler, handler_index);
     } else {
-        ALOGV("get_exception_handler: pc=0x%08x, "
-                "exidx_start=0x%08x, exidx_size=%d, handler=0x%08x, handler_index=%d",
-                pc, exidx_start, exidx_size, handler, handler_index);
+       //ALOGV("get_exception_handler: pc=0x%08x, "
+       //         "exidx_start=0x%08x, exidx_size=%d, handler=0x%08x, handler_index=%d",
+       //         pc, exidx_start, exidx_size, handler, handler_index);
     }
     return handler;
 }
@@ -231,13 +231,13 @@ static bool try_next_byte(const memory_t* memory, byte_stream_t* stream, uint8_t
         break;
     }
 
-    ALOGV("next_byte: ptr=0x%08x, value=0x%02x", stream->ptr, *out_value);
+   //ALOGV("next_byte: ptr=0x%08x, value=0x%02x", stream->ptr, *out_value);
     stream->ptr += 1;
     return true;
 }
 
 static void set_reg(unwind_state_t* state, uint32_t reg, uint32_t value) {
-    ALOGV("set_reg: reg=%d, value=0x%08x", reg, value);
+   //ALOGV("set_reg: reg=%d, value=0x%08x", reg, value);
     state->gregs[reg] = value;
 }
 

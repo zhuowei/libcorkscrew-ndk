@@ -20,7 +20,7 @@
 #include "../ptrace-arch.h"
 
 #include <sys/exec_elf.h>
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 #ifndef PT_ARM_EXIDX
 #define PT_ARM_EXIDX 0x70000001
@@ -55,8 +55,8 @@ static void load_exidx_header(pid_t pid, map_info_t* mi,
                 }
                 *out_exidx_start = mi->start + elf_phdr_offset;
                 *out_exidx_size = elf_phdr_filesz / 8;
-                ALOGV("Parsed EXIDX header info for %s: start=0x%08x, size=%d", mi->name,
-                        *out_exidx_start, *out_exidx_size);
+               //ALOGV("Parsed EXIDX header info for %s: start=0x%08x, size=%d", mi->name,
+               //         *out_exidx_start, *out_exidx_size);
                 return;
             }
         }

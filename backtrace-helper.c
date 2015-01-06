@@ -19,7 +19,7 @@
 
 #include "backtrace-helper.h"
 
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 backtrace_frame_t* add_backtrace_entry(uintptr_t pc, backtrace_frame_t* backtrace,
         size_t ignore_depth, size_t max_depth,

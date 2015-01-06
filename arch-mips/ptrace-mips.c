@@ -19,7 +19,7 @@
 
 #include "../ptrace-arch.h"
 
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 void load_ptrace_map_info_data_arch(pid_t pid, map_info_t* mi, map_info_data_t* data) {
 }

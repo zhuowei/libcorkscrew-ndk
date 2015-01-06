@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/ptrace.h>
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 #if defined(__BIONIC__)
 
@@ -42,7 +42,7 @@
 
 // Bionic offers the Linux kernel headers.
 #include <asm/sigcontext.h>
-#include <asm/ucontext.h>
+#include <ucontext.h>
 typedef struct ucontext ucontext_t;
 
 #else /* __BIONIC_HAVE_UCONTEXT_T */
@@ -136,7 +136,7 @@ static bool try_get_byte(const memory_t* memory, uintptr_t ptr, uint8_t* out_val
 static bool try_get_xbytes(const memory_t* memory, uintptr_t ptr, uint32_t* out_value, uint8_t bytes, uint32_t* cursor) {
     uint32_t data = 0;
     if (bytes > 4) {
-        ALOGE("can't read more than 4 bytes, trying to read %d", bytes);
+        //ALOGE("can't read more than 4 bytes, trying to read %d", bytes);
         return false;
     }
     for (int i = 0; i < bytes; i++) {
@@ -163,7 +163,7 @@ static bool try_get_leb128(const memory_t* memory, uintptr_t ptr, uint32_t* out_
        c++;
     } while (buf & 0x80 && (c * 7) <= 32);
     if (c * 7 > 32) {
-       ALOGE("%s: data exceeds expected 4 bytes maximum", __FUNCTION__);
+       //ALOGE("%s: data exceeds expected 4 bytes maximum", __FUNCTION__);
        return false;
     }
     if (sign_extend) {
@@ -207,7 +207,7 @@ static bool read_dwarf(const memory_t* memory, uintptr_t ptr, uint32_t* out_valu
             }
             break;
         default:
-            ALOGE("unrecognized dwarf lower part encoding: 0x%x", encoding);
+            //ALOGE("unrecognized dwarf lower part encoding: 0x%x", encoding);
             return false;
     }
     /* Higher 4 bits is modifier */
@@ -232,7 +232,7 @@ static bool read_dwarf(const memory_t* memory, uintptr_t ptr, uint32_t* out_valu
             }
             break;
         default:
-            ALOGE("unrecognized dwarf higher part encoding: 0x%x", encoding);
+            //ALOGE("unrecognized dwarf higher part encoding: 0x%x", encoding);
             return false;
     }
     return true;
@@ -242,17 +242,17 @@ static bool read_dwarf(const memory_t* memory, uintptr_t ptr, uint32_t* out_valu
 static uintptr_t find_fde(const memory_t* memory,
                           const map_info_t* map_info_list, uintptr_t pc) {
     if (!pc) {
-        ALOGV("find_fde: pc is zero, no eh_frame");
+       //ALOGV("find_fde: pc is zero, no eh_frame");
         return 0;
     }
     const map_info_t* mi = find_map_info(map_info_list, pc);
     if (!mi) {
-        ALOGV("find_fde: no map info for pc:0x%x", pc);
+       //ALOGV("find_fde: no map info for pc:0x%x", pc);
         return 0;
     }
     const map_info_data_t* midata = mi->data;
     if (!midata) {
-        ALOGV("find_fde: no eh_frame_hdr for map: start=0x%x, end=0x%x", mi->start, mi->end);
+       //ALOGV("find_fde: no eh_frame_hdr for map: start=0x%x, end=0x%x", mi->start, mi->end);
         return 0;
     }
 
@@ -276,7 +276,7 @@ static uintptr_t find_fde(const memory_t* memory,
        try to parse eh_frame instead. Not sure how often it may occur, skipping now.
     */
     if (eh_hdr_info.version != 1) {
-        ALOGV("find_fde: eh_frame_hdr version %d is not supported", eh_hdr_info.version);
+       //ALOGV("find_fde: eh_frame_hdr version %d is not supported", eh_hdr_info.version);
         return 0;
     }
     /* Getting the data:
@@ -286,7 +286,7 @@ static uintptr_t find_fde(const memory_t* memory,
     */
     if (!read_dwarf(memory, eh_frame_hdr, &eh_hdr_info.eh_frame_ptr, eh_hdr_info.eh_frame_ptr_enc, &c)) return 0;
     if (!read_dwarf(memory, eh_frame_hdr, &eh_hdr_info.fde_count, eh_hdr_info.fde_count_enc, &c)) return 0;
-    ALOGV("find_fde: found %d FDEs", eh_hdr_info.fde_count);
+   //ALOGV("find_fde: found %d FDEs", eh_hdr_info.fde_count);
 
     int32_t low = 0;
     int32_t high = eh_hdr_info.fde_count;
@@ -305,13 +305,13 @@ static uintptr_t find_fde(const memory_t* memory,
     }
     /* Value found is at high. */
     if (high < 0) {
-        ALOGV("find_fde: pc %x is out of FDE bounds: %x", pc, start);
+       //ALOGV("find_fde: pc %x is out of FDE bounds: %x", pc, start);
         return 0;
     }
     c += high * 8;
     if (!read_dwarf(memory, eh_frame_hdr, &start, eh_hdr_info.fde_table_enc, &c)) return 0;
     if (!read_dwarf(memory, eh_frame_hdr, &fde, eh_hdr_info.fde_table_enc, &c)) return 0;
-    ALOGV("pc 0x%x, ENTRY %d: start=0x%x, fde=0x%x", pc, high, start, fde);
+   //ALOGV("pc 0x%x, ENTRY %d: start=0x%x, fde=0x%x", pc, high, start, fde);
     return fde;
 }
 
@@ -325,7 +325,7 @@ static bool execute_dwarf(const memory_t* memory, uintptr_t ptr, cie_info_t* cie
     if (!try_get_byte(memory, ptr, &inst, cursor)) {
         return false;
     }
-    ALOGV("DW_CFA inst: 0x%x", inst);
+   //ALOGV("DW_CFA inst: 0x%x", inst);
 
     /* For some instructions upper 2 bits is opcode and lower 6 bits is operand. See dwarf-2.0 7.23. */
     if (inst & 0xc0) {
@@ -338,142 +338,142 @@ static bool execute_dwarf(const memory_t* memory, uintptr_t ptr, cie_info_t* cie
         uint32_t offset = 0;
         case DW_CFA_advance_loc:
             dstate->loc += op * cie_info->code_align;
-            ALOGV("DW_CFA_advance_loc: %d to 0x%x", op, dstate->loc);
+           //ALOGV("DW_CFA_advance_loc: %d to 0x%x", op, dstate->loc);
             break;
         case DW_CFA_offset:
             if (!try_get_uleb128(memory, ptr, &offset, cursor)) return false;
             dstate->regs[op].rule = 'o';
             dstate->regs[op].value = offset * cie_info->data_align;
-            ALOGV("DW_CFA_offset: r%d = o(%d)", op, dstate->regs[op].value);
+           //ALOGV("DW_CFA_offset: r%d = o(%d)", op, dstate->regs[op].value);
             break;
         case DW_CFA_restore:
             dstate->regs[op].rule = stack->regs[op].rule;
             dstate->regs[op].value = stack->regs[op].value;
-            ALOGV("DW_CFA_restore: r%d = %c(%d)", op, dstate->regs[op].rule, dstate->regs[op].value);
+           //ALOGV("DW_CFA_restore: r%d = %c(%d)", op, dstate->regs[op].rule, dstate->regs[op].value);
             break;
         case DW_CFA_nop:
             break;
         case DW_CFA_set_loc: // probably we don't have it on x86.
             if (!try_get_xbytes(memory, ptr, &offset, 4, cursor)) return false;
             if (offset < dstate->loc) {
-                ALOGE("DW_CFA_set_loc: attempt to move location backward");
+                //ALOGE("DW_CFA_set_loc: attempt to move location backward");
                 return false;
             }
             dstate->loc = offset * cie_info->code_align;
-            ALOGV("DW_CFA_set_loc: %d to 0x%x", offset * cie_info->code_align, dstate->loc);
+           //ALOGV("DW_CFA_set_loc: %d to 0x%x", offset * cie_info->code_align, dstate->loc);
             break;
         case DW_CFA_advance_loc1:
             if (!try_get_byte(memory, ptr, (uint8_t*)&offset, cursor)) return false;
             dstate->loc += (uint8_t)offset * cie_info->code_align;
-            ALOGV("DW_CFA_advance_loc1: %d to 0x%x", (uint8_t)offset * cie_info->code_align, dstate->loc);
+           //ALOGV("DW_CFA_advance_loc1: %d to 0x%x", (uint8_t)offset * cie_info->code_align, dstate->loc);
             break;
         case DW_CFA_advance_loc2:
             if (!try_get_xbytes(memory, ptr, &offset, 2, cursor)) return false;
             dstate->loc += (uint16_t)offset * cie_info->code_align;
-            ALOGV("DW_CFA_advance_loc2: %d to 0x%x", (uint16_t)offset * cie_info->code_align, dstate->loc);
+           //ALOGV("DW_CFA_advance_loc2: %d to 0x%x", (uint16_t)offset * cie_info->code_align, dstate->loc);
             break;
         case DW_CFA_advance_loc4:
             if (!try_get_xbytes(memory, ptr, &offset, 4, cursor)) return false;
             dstate->loc += offset * cie_info->code_align;
-            ALOGV("DW_CFA_advance_loc4: %d to 0x%x", offset * cie_info->code_align, dstate->loc);
+           //ALOGV("DW_CFA_advance_loc4: %d to 0x%x", offset * cie_info->code_align, dstate->loc);
             break;
         case DW_CFA_offset_extended: // probably we don't have it on x86.
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) return false;
             if (!try_get_uleb128(memory, ptr, &offset, cursor)) return false;
             if (reg > DWARF_REGISTERS) {
-                ALOGE("DW_CFA_offset_extended: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
+                //ALOGE("DW_CFA_offset_extended: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
                 return false;
             }
             dstate->regs[reg].rule = 'o';
             dstate->regs[reg].value = offset * cie_info->data_align;
-            ALOGV("DW_CFA_offset_extended: r%d = o(%d)", reg, dstate->regs[reg].value);
+           //ALOGV("DW_CFA_offset_extended: r%d = o(%d)", reg, dstate->regs[reg].value);
             break;
         case DW_CFA_restore_extended: // probably we don't have it on x86.
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) return false;
             dstate->regs[reg].rule = stack->regs[reg].rule;
             dstate->regs[reg].value = stack->regs[reg].value;
             if (reg > DWARF_REGISTERS) {
-                ALOGE("DW_CFA_restore_extended: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
+                //ALOGE("DW_CFA_restore_extended: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
                 return false;
             }
-            ALOGV("DW_CFA_restore: r%d = %c(%d)", reg, dstate->regs[reg].rule, dstate->regs[reg].value);
+           //ALOGV("DW_CFA_restore: r%d = %c(%d)", reg, dstate->regs[reg].rule, dstate->regs[reg].value);
             break;
         case DW_CFA_undefined: // probably we don't have it on x86.
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) return false;
             dstate->regs[reg].rule = 'u';
             dstate->regs[reg].value = 0;
             if (reg > DWARF_REGISTERS) {
-                ALOGE("DW_CFA_undefined: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
+                //ALOGE("DW_CFA_undefined: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
                 return false;
             }
-            ALOGV("DW_CFA_undefined: r%d", reg);
+           //ALOGV("DW_CFA_undefined: r%d", reg);
             break;
         case DW_CFA_same_value: // probably we don't have it on x86.
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) return false;
             dstate->regs[reg].rule = 's';
             dstate->regs[reg].value = 0;
             if (reg > DWARF_REGISTERS) {
-                ALOGE("DW_CFA_undefined: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
+                //ALOGE("DW_CFA_undefined: r%d exceeds supported number of registers (%d)", reg, DWARF_REGISTERS);
                 return false;
             }
-            ALOGV("DW_CFA_same_value: r%d", reg);
+           //ALOGV("DW_CFA_same_value: r%d", reg);
             break;
         case DW_CFA_register: // probably we don't have it on x86.
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) return false;
             /* that's new register actually, not offset */
             if (!try_get_uleb128(memory, ptr, &offset, cursor)) return false;
             if (reg > DWARF_REGISTERS || offset > DWARF_REGISTERS) {
-                ALOGE("DW_CFA_register: r%d or r%d exceeds supported number of registers (%d)", reg, offset, DWARF_REGISTERS);
+                //ALOGE("DW_CFA_register: r%d or r%d exceeds supported number of registers (%d)", reg, offset, DWARF_REGISTERS);
                 return false;
             }
             dstate->regs[reg].rule = 'r';
             dstate->regs[reg].value = offset;
-            ALOGV("DW_CFA_register: r%d = r(%d)", reg, dstate->regs[reg].value);
+           //ALOGV("DW_CFA_register: r%d = r(%d)", reg, dstate->regs[reg].value);
             break;
         case DW_CFA_remember_state:
             if (*stack_ptr == DWARF_STATES_STACK) {
-                ALOGE("DW_CFA_remember_state: states stack overflow %d", *stack_ptr);
+                //ALOGE("DW_CFA_remember_state: states stack overflow %d", *stack_ptr);
                 return false;
             }
             stack[(*stack_ptr)++] = *dstate;
-            ALOGV("DW_CFA_remember_state: stacktop moves to %d", *stack_ptr);
+           //ALOGV("DW_CFA_remember_state: stacktop moves to %d", *stack_ptr);
             break;
         case DW_CFA_restore_state:
             /* We have CIE state saved at 0 position. It's not supposed to be taken
                by DW_CFA_restore_state. */
             if (*stack_ptr == 1) {
-                ALOGE("DW_CFA_restore_state: states stack is empty");
+                //ALOGE("DW_CFA_restore_state: states stack is empty");
                 return false;
             }
             /* Don't touch location on restore. */
             uintptr_t saveloc = dstate->loc;
             *dstate = stack[--*stack_ptr];
             dstate->loc = saveloc;
-            ALOGV("DW_CFA_restore_state: stacktop moves to %d", *stack_ptr);
+           //ALOGV("DW_CFA_restore_state: stacktop moves to %d", *stack_ptr);
             break;
         case DW_CFA_def_cfa:
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) return false;
             if (!try_get_uleb128(memory, ptr, &offset, cursor)) return false;
             dstate->cfa_reg = reg;
             dstate->cfa_off = offset;
-            ALOGV("DW_CFA_def_cfa: %x(r%d)", offset, reg);
+           //ALOGV("DW_CFA_def_cfa: %x(r%d)", offset, reg);
             break;
         case DW_CFA_def_cfa_register:
             if (!try_get_uleb128(memory, ptr, &reg, cursor)) {
                 return false;
             }
             dstate->cfa_reg = reg;
-            ALOGV("DW_CFA_def_cfa_register: r%d", reg);
+           //ALOGV("DW_CFA_def_cfa_register: r%d", reg);
             break;
         case DW_CFA_def_cfa_offset:
             if (!try_get_uleb128(memory, ptr, &offset, cursor)) {
                 return false;
             }
             dstate->cfa_off = offset;
-            ALOGV("DW_CFA_def_cfa_offset: %x", offset);
+           //ALOGV("DW_CFA_def_cfa_offset: %x", offset);
             break;
         default:
-            ALOGE("unrecognized DW_CFA_* instruction: 0x%x", inst);
+            //ALOGE("unrecognized DW_CFA_* instruction: 0x%x", inst);
             return false;
     }
     return true;
@@ -489,10 +489,10 @@ static bool get_old_register_value(const memory_t* memory, uint32_t cfa,
             /* We don't have dstate updated for this register, so assuming value kept the same.
                Normally we should look into state and return current value as the old one
                but we don't have all registers in state to handle this properly */
-            ALOGV("get_old_register_value: value of r%d is the same", reg);
+           //ALOGV("get_old_register_value: value of r%d is the same", reg);
             // for ESP if it's not updated by dwarf rule we assume it's equal to CFA
             if (reg == DWARF_ESP) {
-                ALOGV("get_old_register_value: adjusting esp to CFA: 0x%x", cfa);
+               //ALOGV("get_old_register_value: adjusting esp to CFA: 0x%x", cfa);
                 newstate->reg[reg] = cfa;
             } else {
                 newstate->reg[reg] = state->reg[reg];
@@ -501,18 +501,18 @@ static bool get_old_register_value(const memory_t* memory, uint32_t cfa,
         case 'o':
             addr = cfa + (int32_t)dstate->regs[reg].value;
             if (!try_get_word(memory, addr, &newstate->reg[reg])) {
-                ALOGE("get_old_register_value: can't read from 0x%x", addr);
+                //ALOGE("get_old_register_value: can't read from 0x%x", addr);
                 return false;
             }
-            ALOGV("get_old_register_value: r%d at 0x%x is 0x%x", reg, addr, newstate->reg[reg]);
+           //ALOGV("get_old_register_value: r%d at 0x%x is 0x%x", reg, addr, newstate->reg[reg]);
             break;
         case 'r':
             /* We don't have all registers in state so don't even try to look at 'r' */
-            ALOGE("get_old_register_value: register lookup not implemented yet");
+            //ALOGE("get_old_register_value: register lookup not implemented yet");
             break;
         default:
-            ALOGE("get_old_register_value: unexpected rule:%c value:%d for register %d",
-                   dstate->regs[reg].rule, (int32_t)dstate->regs[reg].value, reg);
+            //ALOGE("get_old_register_value: unexpected rule:%c value:%d for register %d",
+            //       dstate->regs[reg].rule, (int32_t)dstate->regs[reg].value, reg);
             return false;
     }
     return true;
@@ -530,10 +530,10 @@ static bool update_state(const memory_t* memory, unwind_state_t* state,
     } else if (dstate->cfa_reg == DWARF_EBP) {
         cfa = state->reg[DWARF_EBP] + dstate->cfa_off;
     } else {
-        ALOGE("update_state: unexpected CFA register: %d", dstate->cfa_reg);
+        //ALOGE("update_state: unexpected CFA register: %d", dstate->cfa_reg);
         return false;
     }
-    ALOGV("update_state: new CFA: 0x%x", cfa);
+   //ALOGV("update_state: new CFA: 0x%x", cfa);
     /* Getting EIP. */
     if (!get_old_register_value(memory, cfa, dstate, DWARF_EIP, state, &newstate)) return false;
     /* Getting EBP. */
@@ -541,9 +541,9 @@ static bool update_state(const memory_t* memory, unwind_state_t* state,
     /* Getting ESP. */
     if (!get_old_register_value(memory, cfa, dstate, DWARF_ESP, state, &newstate)) return false;
 
-    ALOGV("update_state: IP:  0x%x; restore IP:  0x%x", state->reg[DWARF_EIP], newstate.reg[DWARF_EIP]);
-    ALOGV("update_state: EBP: 0x%x; restore EBP: 0x%x", state->reg[DWARF_EBP], newstate.reg[DWARF_EBP]);
-    ALOGV("update_state: ESP: 0x%x; restore ESP: 0x%x", state->reg[DWARF_ESP], newstate.reg[DWARF_ESP]);
+   //ALOGV("update_state: IP:  0x%x; restore IP:  0x%x", state->reg[DWARF_EIP], newstate.reg[DWARF_EIP]);
+   //ALOGV("update_state: EBP: 0x%x; restore EBP: 0x%x", state->reg[DWARF_EBP], newstate.reg[DWARF_EBP]);
+   //ALOGV("update_state: ESP: 0x%x; restore ESP: 0x%x", state->reg[DWARF_ESP], newstate.reg[DWARF_ESP]);
     *state = newstate;
     return true;
 }
@@ -578,7 +578,7 @@ static bool execute_fde(const memory_t* memory,
         return false;
     }
     if ((int32_t)fde_length == -1) {
-        ALOGV("execute_fde: 64-bit dwarf detected, not implemented yet");
+       //ALOGV("execute_fde: 64-bit dwarf detected, not implemented yet");
         return false;
     }
     if (!try_get_word(memory, fde + 4, &cie_offset)) {
@@ -596,20 +596,20 @@ static bool execute_fde(const memory_t* memory,
            return false;
         }
         if ((int32_t)cie_length == -1) {
-           ALOGV("execute_fde: 64-bit dwarf detected, not implemented yet");
+          //ALOGV("execute_fde: 64-bit dwarf detected, not implemented yet");
            return false;
         }
         if (!try_get_word(memory, cie + 4, &cie_offset)) {
            return false;
         }
         if (cie_offset != 0) {
-           ALOGV("execute_fde: can't find CIE");
+          //ALOGV("execute_fde: can't find CIE");
            return false;
         }
     }
-    ALOGV("execute_fde: FDE length: %d", fde_length);
-    ALOGV("execute_fde: CIE pointer: %x", cie);
-    ALOGV("execute_fde: CIE length: %d", cie_length);
+   //ALOGV("execute_fde: FDE length: %d", fde_length);
+   //ALOGV("execute_fde: CIE pointer: %x", cie);
+   //ALOGV("execute_fde: CIE length: %d", cie_length);
 
     /* Read CIE:
        Augmentation independent:
@@ -631,7 +631,7 @@ static bool execute_fde(const memory_t* memory,
     if (!try_get_byte(memory, cie, &cie_info->version, &c)) {
        return false;
     }
-    ALOGV("execute_fde: CIE version: %d", cie_info->version);
+   //ALOGV("execute_fde: CIE version: %d", cie_info->version);
     uint8_t ch;
     do {
         if (!try_get_byte(memory, cie, &ch, &c)) {
@@ -645,7 +645,7 @@ static bool execute_fde(const memory_t* memory,
            case 'S': cie_info->aug_S = 1; break;
            case 'P': cie_info->aug_P = 1; break;
            default:
-              ALOGV("execute_fde: Unrecognized CIE augmentation char: '%c'", ch);
+             //ALOGV("execute_fde: Unrecognized CIE augmentation char: '%c'", ch);
               return false;
               break;
         }
@@ -665,8 +665,8 @@ static bool execute_fde(const memory_t* memory,
             return false;
         }
     }
-    ALOGV("execute_fde: CIE code alignment factor: %d", cie_info->code_align);
-    ALOGV("execute_fde: CIE data alignment factor: %d", cie_info->data_align);
+   //ALOGV("execute_fde: CIE code alignment factor: %d", cie_info->code_align);
+   //ALOGV("execute_fde: CIE data alignment factor: %d", cie_info->data_align);
     if (cie_info->aug_z) {
         if (!try_get_uleb128(memory, cie, &cie_info->aug_z, &c)) {
             return false;
@@ -726,11 +726,11 @@ static bool execute_fde(const memory_t* memory,
         return false;
     }
     dstate->loc = fde_info->start;
-    ALOGV("execute_fde: FDE start: %x", dstate->loc);
+   //ALOGV("execute_fde: FDE start: %x", dstate->loc);
     if (!read_dwarf(memory, fde, &fde_info->length, 0, &c)) {
         return false;
     }
-    ALOGV("execute_fde: FDE length: %x", fde_info->length);
+   //ALOGV("execute_fde: FDE length: %x", fde_info->length);
     if (cie_info->aug_z) {
         if (!try_get_uleb128(memory, fde, &fde_info->aug_z, &c)) {
             return false;
@@ -750,7 +750,7 @@ static bool execute_fde(const memory_t* memory,
         if (!execute_dwarf(memory, fde, cie_info, dstate, &c, stack, &stack_ptr)) {
            return false;
         }
-        ALOGV("IP: %x, LOC: %x", state->reg[DWARF_EIP], dstate->loc);
+       //ALOGV("IP: %x, LOC: %x", state->reg[DWARF_EIP], dstate->loc);
     }
 
     return update_state(memory, state, dstate, cie_info);
@@ -764,10 +764,10 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
     size_t ignored_frames = 0;
     size_t returned_frames = 0;
 
-    ALOGV("Unwinding tid: %d", memory->tid);
-    ALOGV("IP: %x", state->reg[DWARF_EIP]);
-    ALOGV("BP: %x", state->reg[DWARF_EBP]);
-    ALOGV("SP: %x", state->reg[DWARF_ESP]);
+   //ALOGV("Unwinding tid: %d", memory->tid);
+   //ALOGV("IP: %x", state->reg[DWARF_EIP]);
+   //ALOGV("BP: %x", state->reg[DWARF_EBP]);
+   //ALOGV("SP: %x", state->reg[DWARF_ESP]);
 
     for (size_t index = 0; returned_frames < max_depth; index++) {
         uintptr_t fde = find_fde(memory, map_info_list, state->reg[DWARF_EIP]);
@@ -776,10 +776,10 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
         */
         if (!fde) {
             uint32_t ip;
-            ALOGV("trying to restore registers from stack");
+           //ALOGV("trying to restore registers from stack");
             if (!try_get_word(memory, state->reg[DWARF_EBP] + 4, &ip) ||
                 ip == state->reg[DWARF_EIP]) {
-                ALOGV("can't get IP from stack");
+               //ALOGV("can't get IP from stack");
                 break;
             }
             /* We've been able to get IP from stack so recording the frame before continue. */
@@ -790,12 +790,12 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
             state->reg[DWARF_EIP] = ip;
             state->reg[DWARF_ESP] = state->reg[DWARF_EBP] + 8;
             if (!try_get_word(memory, state->reg[DWARF_EBP], &state->reg[DWARF_EBP])) {
-                ALOGV("can't get EBP from stack");
+               //ALOGV("can't get EBP from stack");
                 break;
             }
-            ALOGV("restore IP: %x", state->reg[DWARF_EIP]);
-            ALOGV("restore BP: %x", state->reg[DWARF_EBP]);
-            ALOGV("restore SP: %x", state->reg[DWARF_ESP]);
+           //ALOGV("restore IP: %x", state->reg[DWARF_EIP]);
+           //ALOGV("restore BP: %x", state->reg[DWARF_EBP]);
+           //ALOGV("restore SP: %x", state->reg[DWARF_ESP]);
             continue;
         }
         backtrace_frame_t* frame = add_backtrace_entry(
@@ -813,7 +813,7 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
                 frame->stack_size = state->reg[DWARF_ESP] - stack_top;
             }
         }
-        ALOGV("Stack: 0x%x ... 0x%x - %d bytes", frame->stack_top, state->reg[DWARF_ESP], frame->stack_size);
+       //ALOGV("Stack: 0x%x ... 0x%x - %d bytes", frame->stack_top, state->reg[DWARF_ESP], frame->stack_size);
     }
     return returned_frames;
 }

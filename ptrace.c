@@ -23,7 +23,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 static const uint32_t ELF_MAGIC = 0x464C457f; // "ELF\0177"
 
@@ -46,15 +46,15 @@ void init_memory_ptrace(memory_t* memory, pid_t tid) {
 }
 
 bool try_get_word(const memory_t* memory, uintptr_t ptr, uint32_t* out_value) {
-    ALOGV("try_get_word: reading word at %p", (void*) ptr);
+   //ALOGV("try_get_word: reading word at %p", (void*) ptr);
     if (ptr & 3) {
-        ALOGV("try_get_word: invalid pointer %p", (void*) ptr);
+       //ALOGV("try_get_word: invalid pointer %p", (void*) ptr);
         *out_value = 0xffffffffL;
         return false;
     }
     if (memory->tid < 0) {
         if (!is_readable_map(memory->map_info_list, ptr)) {
-            ALOGV("try_get_word: pointer %p not in a readable map", (void*) ptr);
+           //ALOGV("try_get_word: pointer %p not in a readable map", (void*) ptr);
             *out_value = 0xffffffffL;
             return false;
         }
@@ -62,7 +62,7 @@ bool try_get_word(const memory_t* memory, uintptr_t ptr, uint32_t* out_value) {
         return true;
     } else {
 #if defined(__APPLE__)
-        ALOGV("no ptrace on Mac OS");
+       //ALOGV("no ptrace on Mac OS");
         return false;
 #else
         // ptrace() returns -1 and sets errno when the operation fails.
@@ -70,8 +70,8 @@ bool try_get_word(const memory_t* memory, uintptr_t ptr, uint32_t* out_value) {
         errno = 0;
         *out_value = ptrace(PTRACE_PEEKTEXT, memory->tid, (void*)ptr, NULL);
         if (*out_value == 0xffffffffL && errno) {
-            ALOGV("try_get_word: invalid pointer 0x%08x reading from tid %d, "
-                    "ptrace() errno=%d", ptr, memory->tid, errno);
+           //ALOGV("try_get_word: invalid pointer 0x%08x reading from tid %d, "
+           //         "ptrace() errno=%d", ptr, memory->tid, errno);
             return false;
         }
         return true;

@@ -31,8 +31,8 @@
 #include <string.h>
 #include <pthread.h>
 #include <unwind.h>
-#include <cutils/log.h>
-#include <cutils/atomic.h>
+//#include <cutils/log.h>
+//#include <cutils/atomic.h>
 
 #define __USE_GNU // For dladdr(3) in glibc.
 #include <dlfcn.h>
@@ -93,7 +93,7 @@ static _Unwind_Reason_Code unwind_backtrace_callback(struct _Unwind_Context* con
 }
 
 ssize_t unwind_backtrace(backtrace_frame_t* backtrace, size_t ignore_depth, size_t max_depth) {
-    ALOGV("Unwinding current thread %d.", gettid());
+    //ALOGV("Unwinding current thread %d.", gettid());
 
     map_info_t* milist = acquire_my_map_info_list();
 
@@ -115,6 +115,11 @@ ssize_t unwind_backtrace(backtrace_frame_t* backtrace, size_t ignore_depth, size
     return rc == _URC_END_OF_STACK ? 0 : -1;
 }
 
+ssize_t unwind_backtrace_signal(siginfo_t* siginfo, void* sigcontext, backtrace_frame_t* backtrace, size_t ignore_depth, size_t max_depth) {
+    map_info_t* milist = acquire_my_map_info_list();
+    return unwind_backtrace_signal_arch(siginfo, sigcontext, milist, backtrace, ignore_depth, max_depth);
+}
+
 #ifdef CORKSCREW_HAVE_ARCH
 static const int32_t STATE_DUMPING = -1;
 static const int32_t STATE_DONE = -2;
@@ -130,7 +135,7 @@ static volatile struct {
     size_t returned_frames;
 } g_unwind_signal_state;
 
-static void unwind_backtrace_thread_signal_handler(int n __attribute__((unused)), siginfo_t* siginfo, void* sigcontext) {
+/*static void unwind_backtrace_thread_signal_handler(int n __attribute__((unused)), siginfo_t* siginfo, void* sigcontext) {
     if (!android_atomic_acquire_cas(gettid(), STATE_DUMPING, &g_unwind_signal_state.tid_state)) {
         g_unwind_signal_state.returned_frames = unwind_backtrace_signal_arch(
                 siginfo, sigcontext,
@@ -140,19 +145,21 @@ static void unwind_backtrace_thread_signal_handler(int n __attribute__((unused))
                 g_unwind_signal_state.max_depth);
         android_atomic_release_store(STATE_DONE, &g_unwind_signal_state.tid_state);
     } else {
-        ALOGV("Received spurious SIGURG on thread %d that was intended for thread %d.",
-                gettid(), android_atomic_acquire_load(&g_unwind_signal_state.tid_state));
+        //ALOGV("Received spurious SIGURG on thread %d that was intended for thread %d.",
+        //        gettid(), android_atomic_acquire_load(&g_unwind_signal_state.tid_state));
     }
 }
+*/
 #endif
 
+/*
 ssize_t unwind_backtrace_thread(pid_t tid, backtrace_frame_t* backtrace,
         size_t ignore_depth, size_t max_depth) {
     if (tid == gettid()) {
         return unwind_backtrace(backtrace, ignore_depth + 1, max_depth);
     }
 
-    ALOGV("Unwinding thread %d from thread %d.", tid, gettid());
+    //ALOGV("Unwinding thread %d from thread %d.", tid, gettid());
 
     // TODO: there's no tgkill(2) on Mac OS, so we'd either need the
     // mach_port_t or the pthread_t rather than the tid.
@@ -179,7 +186,7 @@ ssize_t unwind_backtrace_thread(pid_t tid, backtrace_frame_t* backtrace,
         // Signal the specific thread that we want to dump.
         int32_t tid_state = tid;
         if (tgkill(getpid(), tid, SIGURG)) {
-            ALOGV("Failed to send SIGURG to thread %d.", tid);
+            //ALOGV("Failed to send SIGURG to thread %d.", tid);
         } else {
             // Wait for the other thread to start dumping the stack, or time out.
             int wait_millis = 250;
@@ -189,10 +196,10 @@ ssize_t unwind_backtrace_thread(pid_t tid, backtrace_frame_t* backtrace,
                     break;
                 }
                 if (wait_millis--) {
-                    ALOGV("Waiting for thread %d to start dumping the stack...", tid);
+                    //ALOGV("Waiting for thread %d to start dumping the stack...", tid);
                     usleep(1000);
                 } else {
-                    ALOGV("Timed out waiting for thread %d to start dumping the stack.", tid);
+                    //ALOGV("Timed out waiting for thread %d to start dumping the stack.", tid);
                     break;
                 }
             }
@@ -201,7 +208,7 @@ ssize_t unwind_backtrace_thread(pid_t tid, backtrace_frame_t* backtrace,
         // Try to cancel the dump if it has not started yet.
         if (tid_state == tid) {
             if (!android_atomic_acquire_cas(tid, STATE_CANCEL, &g_unwind_signal_state.tid_state)) {
-                ALOGV("Canceled thread %d stack dump.", tid);
+                //ALOGV("Canceled thread %d stack dump.", tid);
                 tid_state = STATE_CANCEL;
             } else {
                 tid_state = android_atomic_acquire_load(&g_unwind_signal_state.tid_state);
@@ -213,7 +220,7 @@ ssize_t unwind_backtrace_thread(pid_t tid, backtrace_frame_t* backtrace,
         // is owned by this thread, such as milist.  It should not take very
         // long to take the dump once started.
         while (tid_state == STATE_DUMPING) {
-            ALOGV("Waiting for thread %d to finish dumping the stack...", tid);
+            //ALOGV("Waiting for thread %d to finish dumping the stack...", tid);
             usleep(1000);
             tid_state = android_atomic_acquire_load(&g_unwind_signal_state.tid_state);
         }
@@ -232,6 +239,7 @@ ssize_t unwind_backtrace_thread(pid_t tid, backtrace_frame_t* backtrace,
     return -1;
 #endif
 }
+*/
 
 ssize_t unwind_backtrace_ptrace(pid_t tid, const ptrace_context_t* context,
         backtrace_frame_t* backtrace, size_t ignore_depth, size_t max_depth) {

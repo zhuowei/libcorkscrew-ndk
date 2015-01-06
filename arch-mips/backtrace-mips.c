@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <sys/ptrace.h>
 #include <sys/exec_elf.h>
-#include <cutils/log.h>
+//#include <cutils/log.h>
 
 /* For PTRACE_GETREGS */
 typedef struct {
@@ -90,7 +90,7 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
         if (frame)
             frame->stack_top = state->sp;
 
-        ALOGV("#%d: frame=%p pc=%08x sp=%08x\n",
+       //ALOGV("#%d: frame=%p pc=%08x sp=%08x\n",
               index, frame, frame->absolute_pc, frame->stack_top);
 
         for (addr = state->pc; maxcheck-- > 0 && !found_start; addr -= 4) {
@@ -98,7 +98,7 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
             if (!try_get_word(memory, addr, &op))
                 break;
 
-            // ALOGV("@0x%08x: 0x%08x\n", addr, op);
+            ////ALOGV("@0x%08x: 0x%08x\n", addr, op);
             switch (op & 0xffff0000) {
             case 0x27bd0000: // addiu sp, imm
                 {
@@ -107,16 +107,16 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
                     if (immediate < 0) {
                         stack_size = -immediate;
                         found_start = true;
-                        ALOGV("@0x%08x: found stack adjustment=%d\n", addr, stack_size);
+                       //ALOGV("@0x%08x: found stack adjustment=%d\n", addr, stack_size);
                     }
                 }
                 break;
             case 0xafbf0000: // sw ra, imm(sp)
                 ra_offset = ((((int)op) << 16) >> 16);
-                ALOGV("@0x%08x: found ra offset=%d\n", addr, ra_offset);
+               //ALOGV("@0x%08x: found ra offset=%d\n", addr, ra_offset);
                 break;
             case 0x3c1c0000: // lui gp
-                ALOGV("@0x%08x: found function boundary\n", addr);
+               //ALOGV("@0x%08x: found function boundary\n", addr);
                 found_start = true;
                 break;
             default:
@@ -129,14 +129,14 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
             if (!try_get_word(memory, state->sp + ra_offset, &next_ra))
                 break;
             state->ra = next_ra;
-            ALOGV("New ra: 0x%08x\n", state->ra);
+           //ALOGV("New ra: 0x%08x\n", state->ra);
         }
 
         if (stack_size) {
             if (frame)
                 frame->stack_size = stack_size;
             state->sp += stack_size;
-            ALOGV("New sp: 0x%08x\n", state->sp);
+           //ALOGV("New sp: 0x%08x\n", state->sp);
         }
 
         if (state->pc == state->ra && stack_size == 0)
@@ -148,7 +148,7 @@ static ssize_t unwind_backtrace_common(const memory_t* memory,
         state->pc = state->ra;
     }
 
-    ALOGV("returning %d frames\n", returned_frames);
+   //ALOGV("returning %d frames\n", returned_frames);
 
     return returned_frames;
 }
@@ -163,7 +163,7 @@ ssize_t unwind_backtrace_signal_arch(siginfo_t* siginfo, void* sigcontext,
     state.pc = uc->pc;
     state.ra = uc->ra;
 
-    ALOGV("unwind_backtrace_signal_arch: "
+   //ALOGV("unwind_backtrace_signal_arch: "
           "ignore_depth=%d max_depth=%d pc=0x%08x sp=0x%08x ra=0x%08x\n",
           ignore_depth, max_depth, state.pc, state.sp, state.ra);
 
@@ -186,7 +186,7 @@ ssize_t unwind_backtrace_ptrace_arch(pid_t tid, const ptrace_context_t* context,
     state.ra = regs.regs[31];
     state.pc = regs.epc;
 
-    ALOGV("unwind_backtrace_ptrace_arch: "
+   //ALOGV("unwind_backtrace_ptrace_arch: "
           "ignore_depth=%d max_depth=%d pc=0x%08x sp=0x%08x ra=0x%08x\n",
           ignore_depth, max_depth, state.pc, state.sp, state.ra);
 

@@ -26,7 +26,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <cutils/log.h>
+//#include <cutils/log.h>
 #include <sys/time.h>
 
 #if defined(__APPLE__)
@@ -58,10 +58,10 @@ static map_info_t* parse_vmmap_line(const char* line) {
         mi->data = NULL;
         memcpy(mi->name, name, name_len);
         mi->name[name_len - 1] = '\0';
-        ALOGV("Parsed map: start=0x%08x, end=0x%08x, "
-              "is_readable=%d, is_writable=%d is_executable=%d, name=%s",
-              mi->start, mi->end,
-              mi->is_readable, mi->is_writable, mi->is_executable, mi->name);
+       //ALOGV("Parsed map: start=0x%08x, end=0x%08x, "
+       //       "is_readable=%d, is_writable=%d is_executable=%d, name=%s",
+       //       mi->start, mi->end,
+       //       mi->is_readable, mi->is_writable, mi->is_executable, mi->name);
     }
     return mi;
 }
@@ -123,10 +123,10 @@ static map_info_t* parse_maps_line(const char* line)
         mi->data = NULL;
         memcpy(mi->name, name, name_len);
         mi->name[name_len] = '\0';
-        ALOGV("Parsed map: start=0x%08x, end=0x%08x, "
-              "is_readable=%d, is_writable=%d, is_executable=%d, name=%s",
-              mi->start, mi->end,
-              mi->is_readable, mi->is_writable, mi->is_executable, mi->name);
+       //ALOGV("Parsed map: start=0x%08x, end=0x%08x, "
+       //       "is_readable=%d, is_writable=%d, is_executable=%d, name=%s",
+       //       mi->start, mi->end,
+       //       mi->is_readable, mi->is_writable, mi->is_executable, mi->name);
     }
     return mi;
 }
@@ -210,7 +210,7 @@ static int64_t now_ns() {
 
 static void dec_ref(map_info_t* milist, my_map_info_data_t* data) {
     if (!--data->refs) {
-        ALOGV("Freed my_map_info_list %p.", milist);
+       //ALOGV("Freed my_map_info_list %p.", milist);
         free(data);
         free_map_info_list(milist);
     }
@@ -224,11 +224,11 @@ map_info_t* acquire_my_map_info_list() {
         my_map_info_data_t* data = (my_map_info_data_t*)g_my_map_info_list->data;
         int64_t age = time - data->timestamp;
         if (age >= MAX_CACHE_AGE) {
-            ALOGV("Invalidated my_map_info_list %p, age=%lld.", g_my_map_info_list, age);
+           //ALOGV("Invalidated my_map_info_list %p, age=%lld.", g_my_map_info_list, age);
             dec_ref(g_my_map_info_list, data);
             g_my_map_info_list = NULL;
         } else {
-            ALOGV("Reusing my_map_info_list %p, age=%lld.", g_my_map_info_list, age);
+           //ALOGV("Reusing my_map_info_list %p, age=%lld.", g_my_map_info_list, age);
         }
     }
 
@@ -236,7 +236,7 @@ map_info_t* acquire_my_map_info_list() {
         my_map_info_data_t* data = (my_map_info_data_t*)malloc(sizeof(my_map_info_data_t));
         g_my_map_info_list = load_map_info_list(getpid());
         if (g_my_map_info_list != NULL) {
-            ALOGV("Loaded my_map_info_list %p.", g_my_map_info_list);
+           //ALOGV("Loaded my_map_info_list %p.", g_my_map_info_list);
             g_my_map_info_list->data = data;
             data->refs = 1;
             data->timestamp = time;
